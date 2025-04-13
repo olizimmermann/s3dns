@@ -44,6 +44,9 @@ docker run --rm -p 53:53/udp -v "./bucket_findings/:/app/buckets/" --name "s3dns
 ```
 You will find all findings in your console or within in the mounted folder "./bucket_finding/"
 
+## Using S3DNS
+While you exploring your target, use your S3DNS instance as your DNS server. It will forward all DNS requests to your desired DNS server (default 1.1.1.1). As soon you request a domain which contains any sign of an AWS S3 bucket, it will let you know. The smart part of S3DNS is, it will also check each domain for CNAMES and follows them, as long no other CNAME entry is left. If you found a bucket, scan it like you usually would do or get a hinch of the naming of the bucket. Maybe you find more!
+
 ## Configuration
 
 You can configure s3dns by setting environment variables or modifying the s3dns.py script directly.
