@@ -3,8 +3,8 @@
 s3dns is a lightweight DNS server designed to uncover Amazon S3 buckets by resolving CNAME records and matching AWS S3 URL patterns. It’s a valuable tool for security researchers, penetration testers, and developers aiming to identify exposed S3 buckets during domain analysis.
 
 ### Features
-- Acts as a DNS server that follows CNAME records
-- Identifies and matches AWS S3 bucket URL patterns ￼
+- Acts as a DNS server that follows CNAME records (sometimes websites hide s3 location behind CNAMES)
+- Identifies and matches AWS S3 bucket URL patterns
 - Assists in discovering potentially exposed S3 buckets
 - Lightweight and easy to deploy using Docker
 
