@@ -11,7 +11,7 @@ COPY . .
 ENV DOCKER=true
 ENV LOCAL_DNS_SERVER_IP='0.0.0.0'
 ENV REAL_DNS_SERVER_IP='1.1.1.1'
-ENV BUCKET_FILE='/app/buckets/bucket.txt'
+ENV BUCKET_FILE='/app/buckets/buckets.txt'
 
 VOLUME ./bucket_file/:/app/buckets/
 

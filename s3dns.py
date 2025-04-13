@@ -307,10 +307,6 @@ if __name__ == "__main__":
     if not ip_pattern.match(local_dns_server_ip):
         print(f"Invalid IP address format: {local_dns_server_ip}")
         sys.exit(1)
-
-    
-    # Print the listening address
-    print(f"Listening on {color.bcolors.color_text(local_dns_server_ip, color.bcolors.OKGREEN)}:53")
     
     # Get the DNS server address from the user
     if not docker:
