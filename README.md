@@ -3,14 +3,14 @@
 s3dns is a lightweight DNS server designed to uncover Amazon S3 buckets by resolving CNAME records and matching AWS S3 URL patterns. It’s a valuable tool for security researchers, penetration testers, and developers aiming to identify exposed S3 buckets during domain analysis.
 
 ### Features
-	-	Acts as a DNS server that follows CNAME records
-	-	Identifies and matches AWS S3 bucket URL patterns ￼
-	-	Assists in discovering potentially exposed S3 buckets
-	-	Lightweight and easy to deploy using Docker
+- Acts as a DNS server that follows CNAME records
+- Identifies and matches AWS S3 bucket URL patterns ￼
+- Assists in discovering potentially exposed S3 buckets
+- Lightweight and easy to deploy using Docker
 
 ### Prerequisites
-	-	Python 3.11+
-	-	Docker (optional, for containerized deployment)
+- Python 3.11+
+- Docker (optional, for containerized deployment)
 
 ## Installation
 
@@ -23,6 +23,7 @@ cd s3dns
 
 ### Install Dependencies
 
+Consider using a virtual environment.
 ```sh
 pip install -r requirements.txt
 ```
@@ -30,8 +31,9 @@ pip install -r requirements.txt
 
 ### Running with Python
 
+Since you need to listeno on port 53, you need to run it as root.
 ```sh
-python s3dns.py
+sudo python s3dns.py
 ```
 
 ### Running with Docker
@@ -40,8 +42,7 @@ python s3dns.py
 docker build -t s3dns .
 docker run --rm -p 53:53/udp -v "./bucket_findings/:/app/buckets/" --name "s3dns" s3dns
 ```
-
-Replace 53 with your desired UDP port if necessary.
+You will find all findings in your console or within in the mounted folder "./bucket_finding/"
 
 ## Configuration
 
