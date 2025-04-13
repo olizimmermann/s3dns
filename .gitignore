@@ -172,3 +172,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# S3DNS
+buckets.txt
+bucket_findings/*
