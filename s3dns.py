@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 class S3DNS:
    
-   s3_regex_patterns = [
+    s3_regex_patterns = [
        # AWS S3 - Virtual-hosted–style (global)
        r"[a-z0-9.-]+\.s3\.amazonaws\.com",
        r"[a-z0-9.-]+\.s3-[a-z0-9-]+\.amazonaws\.com",
@@ -81,10 +81,10 @@ class S3DNS:
        # Wasabi (optional)
        r"[a-z0-9.-]+\.s3\.[a-z0-9-]+\.wasabisys\.com",
        r"s3\.[a-z0-9-]+\.wasabisys\.com/[a-z0-9.-]+"
-   ]
+    ]
 
    # in case you need to add some hardcoded patterns
-   patterns = [
+    patterns = [
         "s3-us-west-1.amazonaws.com",
         "s3-us-west-2.amazonaws.com",
         "s3-us-east-1.amazonaws.com",
