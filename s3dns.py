@@ -23,7 +23,7 @@ from helpers import color
 
 # configuration possible below
 
-version = "0.0.1"
+version = "0.0.2"
 logo = r"""
    _____ ____    _____  _   _  _____   _____       _            _             
   / ____|___ \  |  __ \| \ | |/ ____| |  __ \     | |          | |            
@@ -57,7 +57,9 @@ class S3DNS:
         r"[a-z0-9]+\.s3\.amazonaws\.com\.cn",
         r"[a-z0-9]+\.s3-[a-z0-9]+\.amazonaws\.com\.cn",
         r"([a-z0-9.-]+)\.s3(?:[-a-z0-9]*)?\.amazonaws\.com(?:/[^\s]*)?",
-        r"(?:([a-z0-9.-]+)\.s3(?:[-a-z0-9]*)\.amazonaws\.com|s3(?:[-a-z0-9]*)\.amazonaws\.com/([a-z0-9.-]+))(?:/[^\s]*)?"
+        r"(?:([a-z0-9.-]+)\.s3(?:[-a-z0-9]*)\.amazonaws\.com|s3(?:[-a-z0-9]*)\.amazonaws\.com/([a-z0-9.-]+))(?:/[^\s]*)?",
+        r"([a-z0-9-]+)\.blob\.core\.windows\.net(?:/[^\s]*)?",
+        r"([a-z0-9._-]+)\.storage\.googleapis\.com(?:/[^\s]*)?"
     ]
 
     patterns = [
