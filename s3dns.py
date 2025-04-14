@@ -19,7 +19,7 @@ from helpers import color
 # Use S3DNSDetector for intercepting DNS requests
 # Run it via python3 s3dns.py
 # Not suited as default dns server, only for analyzing.
-# Please check regulary on Github for latest updates
+# Please check regularly on Github for latest updates
 
 # configuration possible below
 
