@@ -23,7 +23,7 @@ from helpers import color
 
 # configuration possible below
 
-version = "0.0.2"
+version = "0.0.3"
 logo = r"""
    _____ ____    _____  _   _  _____   _____       _            _             
   / ____|___ \  |  __ \| \ | |/ ____| |  __ \     | |          | |            
@@ -48,21 +48,43 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class S3DNS:
+   
+   s3_regex_patterns = [
+       # AWS S3 - Virtual-hosted–style (global)
+       r"[a-z0-9.-]+\.s3\.amazonaws\.com",
+       r"[a-z0-9.-]+\.s3-[a-z0-9-]+\.amazonaws\.com",
+       r"[a-z0-9.-]+\.s3\.[a-z0-9-]+\.amazonaws\.com",
+   
+       # AWS S3 - Virtual-hosted–style (China)
+       r"[a-z0-9.-]+\.s3\.amazonaws\.com\.cn",
+       r"[a-z0-9.-]+\.s3-[a-z0-9-]+\.amazonaws\.com\.cn",
+       r"[a-z0-9.-]+\.s3\.[a-z0-9-]+\.amazonaws\.com\.cn",
+   
+       # AWS S3 - Path-style (global + regional + China)
+       r"s3\.amazonaws\.com/[a-z0-9.-]+",
+       r"s3-[a-z0-9-]+\.amazonaws\.com/[a-z0-9.-]+",
+       r"s3\.[a-z0-9-]+\.amazonaws\.com/[a-z0-9.-]+",
+       r"s3\.amazonaws\.com\.cn/[a-z0-9.-]+",
+       r"s3-[a-z0-9-]+\.amazonaws\.com\.cn/[a-z0-9.-]+",
+       r"s3\.[a-z0-9-]+\.amazonaws\.com\.cn/[a-z0-9.-]+",
+   
+       # Google Cloud Storage - Virtual-hosted & path-style
+       r"[a-z0-9._-]+\.storage\.googleapis\.com",
+       r"storage\.googleapis\.com/[a-z0-9._-]+",
+   
+       # Azure Blob Storage
+       r"[a-z0-9-]+\.blob\.core\.windows\.net",
+   
+       # DigitalOcean Spaces (optional)
+       r"[a-z0-9.-]+\.[a-z0-9-]+\.digitaloceanspaces\.com",
+   
+       # Wasabi (optional)
+       r"[a-z0-9.-]+\.s3\.[a-z0-9-]+\.wasabisys\.com",
+       r"s3\.[a-z0-9-]+\.wasabisys\.com/[a-z0-9.-]+"
+   ]
 
-    s3_regex_patterns = [
-        r"s3-[a-z0-9]+\.s3\.amazonaws\.com",
-        r"s3-[a-z0-9]+\.s3-[a-z0-9]+\.amazonaws\.com",
-        r"[a-z0-9]+\.s3\.amazonaws\.com",
-        r"[a-z0-9]+\.s3-[a-z0-9]+\.amazonaws\.com",
-        r"[a-z0-9]+\.s3\.amazonaws\.com\.cn",
-        r"[a-z0-9]+\.s3-[a-z0-9]+\.amazonaws\.com\.cn",
-        r"([a-z0-9.-]+)\.s3(?:[-a-z0-9]*)?\.amazonaws\.com(?:/[^\s]*)?",
-        r"(?:([a-z0-9.-]+)\.s3(?:[-a-z0-9]*)\.amazonaws\.com|s3(?:[-a-z0-9]*)\.amazonaws\.com/([a-z0-9.-]+))(?:/[^\s]*)?",
-        r"([a-z0-9-]+)\.blob\.core\.windows\.net(?:/[^\s]*)?",
-        r"([a-z0-9._-]+)\.storage\.googleapis\.com(?:/[^\s]*)?"
-    ]
-
-    patterns = [
+   # in case you need to add some hardcoded patterns
+   patterns = [
         "s3-us-west-1.amazonaws.com",
         "s3-us-west-2.amazonaws.com",
         "s3-us-east-1.amazonaws.com",
