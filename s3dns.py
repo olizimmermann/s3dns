@@ -219,9 +219,9 @@ class S3DNS:
                     break
 
             if ('s3-' in domain and domain.endswith('.amazonaws.com')) or regex_match or any(pattern in domain for pattern in self.patterns):
-                print(f"{color.bcolors.FAIL}S3 Bucket detected: {domain}{color.bcolors.ENDC}")
+                print(f"{color.bcolors.FAIL}Bucket detected: {domain}{color.bcolors.ENDC}")
                 sys.stdout.flush()
-                logger.info(f"S3 Bucket detected: {domain}")
+                logger.info(f"Bucket detected: {domain}")
                 self.add_to_bucket_file(domain)
                 return True
             else:
