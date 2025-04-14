@@ -82,7 +82,7 @@ class S3DNS:
        # Wasabi (optional)
        r"[a-z0-9.-]+\.s3\.[a-z0-9-]+\.wasabisys\.com",
        r"s3\.[a-z0-9-]+\.wasabisys\.com/[a-z0-9.-]+",
-       r"s3\.[a-z0-9-]+\.wasabisys\.com
+       r"s3\.[a-z0-9-]+\.wasabisys\.com"
     ]
 
    # in case you need to add some hardcoded patterns
