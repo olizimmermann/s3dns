@@ -1,65 +1,133 @@
 # S3DNS
 
-s3dns is a lightweight DNS server designed to uncover Amazon S3 buckets by resolving CNAME records and matching AWS S3 URL patterns. It’s a valuable tool for security researchers, penetration testers, and developers aiming to identify exposed S3 buckets during domain analysis.
+**s3dns** is a lightweight DNS server that helps uncover cloud storage buckets (AWS S3, Google Cloud Storage, and Azure Blob) by resolving DNS requests, tracing CNAMEs, and matching known bucket URL patterns.
 
-### Update 2025/04/14
-- added regex pattern for GCP and Azure buckets
+It’s a handy companion for **pentesters**, **bug bounty hunters**, and **cloud security analysts** who want to catch exposed cloud buckets during DNS traffic analysis.
 
-### Features
-- Acts as a DNS server that follows CNAME records (sometimes websites hide s3 location behind CNAMES)
-- Identifies and matches AWS S3 bucket URL patterns
-- Assists in discovering potentially exposed S3 buckets
-- Lightweight and easy to deploy using Docker
+---
 
-### Prerequisites
-- Python 3.11+
-- Docker (optional, for containerized deployment)
+### 🆕 Update 2025/04/14
 
-## Installation
+- Added regex support for **Google Cloud Storage** and **Azure Blob Storage** buckets
 
-Clone the Repository
+---
 
-```sh
+## 🚀 Features
+
+- Runs as a DNS server (port `53/udp`)
+- Detects potential cloud storage buckets in DNS requests
+  - **AWS S3** (virtual + path style)
+  - **GCP Buckets**
+  - **Azure Blob Containers**
+- Follows **CNAME chains** to catch masked cloud bucket links
+- Logs bucket indicators to console and file
+- Super lightweight and container-friendly
+
+---
+
+## ⚙️ How It Works
+
+S3DNS listens on **UDP port 53** for DNS queries. For every DNS request it:
+
+1. **Extracts the requested domain**
+2. **Forwards the request to a real DNS resolver** (e.g., `1.1.1.1`)
+3. **Returns the valid DNS response to the client**
+4. In parallel, it:
+   - **Checks for AWS/GCP/Azure bucket patterns**
+   - **Follows CNAME chains recursively**
+   - **Logs bucket-like domains and findings**
+
+⚡ **Use this as your DNS during recon**, and it’ll tell you if any domains you're touching point to cloud buckets.
+
+---
+
+## 🧱 Prerequisites
+
+- Python **3.11+**
+- Docker (optional, but recommended)
+
+---
+
+## 🔧 Installation
+
+### Clone the Repository
+
+```bash
 git clone https://github.com/olizimmermann/s3dns.git
 cd s3dns
 ```
 
 ### Install Dependencies
 
-Consider using a virtual environment.
-```sh
+(Using a virtual environment is recommended)
+
+```bash
 pip install -r requirements.txt
 ```
-## Usage
 
-### Running with Python
+---
 
-Since you need to listeno on port 53, you need to run it as root.
-```sh
+## 🧪 Usage
+
+### Run with Python
+
+Port 53 requires elevated privileges:
+
+```bash
 sudo python s3dns.py
 ```
 
-### Running with Docker
+### Run with Docker
 
-```sh
+```bash
 docker build -t s3dns .
-docker run --rm -p 53:53/udp -v "./bucket_findings/:/app/buckets/" --name "s3dns" s3dns
+docker run --rm -p 53:53/udp \
+  -v "./bucket_findings/:/app/buckets/" \
+  --name "s3dns" \
+  s3dns
 ```
-You will find all findings in your console or within in the mounted folder "./bucket_finding/"
 
-## Using S3DNS
-While you exploring your target, use your S3DNS instance as your DNS server. It will forward all DNS requests to your desired DNS server (default 1.1.1.1). As soon you request a domain which contains any sign of an AWS S3 bucket, it will let you know. The smart part of S3DNS is, it will also check each domain for CNAMES and follows them, as long no other CNAME entry is left. If you found a bucket, scan it like you usually would do or get a hinch of the naming of the bucket. Maybe you find more!
+📁 You'll find all findings:
+- In your **terminal**
+- Or in `./bucket_findings/`
 
-## Configuration
+---
 
-You can configure s3dns by setting environment variables or modifying the s3dns.py script directly.
+## 🌐 Using S3DNS in Recon
+
+Set your system or tool’s **DNS resolver to your S3DNS instance**.
+
+> While browsing or fuzzing your target, S3DNS will analyze every domain and tell you if it resolves to:
+> - An **AWS S3 bucket**
+> - A **GCP bucket**
+> - An **Azure blob container**
+>
+> It even **follows CNAMEs**, so if a domain is pointing to something like `cdn.example.com`, which in turn points to a cloud bucket—it’ll catch that too.
+
+Use it passively while analyzing a site to **spot exposed buckets without active probing.**
+
+---
+
+## ⚙️ Configuration
+
+You can tweak the behavior by setting environment variables or modifying `s3dns.py` directly.
+
+---
+
+## 🖼️ Sample Output
 
 ![Sample Output Docker](https://github.com/olizimmermann/s3dns/blob/main/images/output.png)
 
-## License
+---
 
-This project is licensed under the MIT License.
+## 📄 License
 
-## Disclaimer
+MIT License — Free to use, improve, and share.
 
-Use this tool responsibly and only on domains you own or have explicit permission to test. Unauthorized scanning or probing of domains may be illegal.
+---
+
+## ⚠️ Disclaimer
+
+Use responsibly. Only scan domains you **own** or have **explicit permission** to analyze.
+
+Unauthorized access or probing may be illegal.
