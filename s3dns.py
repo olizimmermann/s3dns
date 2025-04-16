@@ -23,7 +23,7 @@ from helpers import color
 
 # configuration possible below
 
-version = "0.0.3"
+version = "0.0.4"
 logo = r"""
    _____ ____    _____  _   _  _____   _____       _            _             
   / ____|___ \  |  __ \| \ | |/ ____| |  __ \     | |          | |            
@@ -61,16 +61,15 @@ class S3DNS:
        r"[a-z0-9.-]+\.s3\.[a-z0-9-]+\.amazonaws\.com\.cn",
    
        # AWS S3 - Path-style (global + regional + China)
-       r"s3\.amazonaws\.com/[a-z0-9.-]+",
-       r"s3-[a-z0-9-]+\.amazonaws\.com/[a-z0-9.-]+",
-       r"s3\.[a-z0-9-]+\.amazonaws\.com/[a-z0-9.-]+",
-       r"s3\.amazonaws\.com\.cn/[a-z0-9.-]+",
-       r"s3-[a-z0-9-]+\.amazonaws\.com\.cn/[a-z0-9.-]+",
-       r"s3\.[a-z0-9-]+\.amazonaws\.com\.cn/[a-z0-9.-]+",
+       r"s3\.amazonaws\.com",
+       r"s3-[a-z0-9-]+\.amazonaws\.com",
+       r"s3\.[a-z0-9-]+\.amazonaws\.com",
+       r"s3\.amazonaws\.com\.cn",
+       r"s3-[a-z0-9-]+\.amazonaws\.com\.cn",
+       r"s3\.[a-z0-9-]+\.amazonaws\.com\.cn",
    
        # Google Cloud Storage - Virtual-hosted & path-style
        r"[a-z0-9._-]+\.storage\.googleapis\.com",
-       r"storage\.googleapis\.com/[a-z0-9._-]+",
        r"storage\.googleapis\.com",
    
        # Azure Blob Storage
@@ -81,7 +80,6 @@ class S3DNS:
    
        # Wasabi (optional)
        r"[a-z0-9.-]+\.s3\.[a-z0-9-]+\.wasabisys\.com",
-       r"s3\.[a-z0-9-]+\.wasabisys\.com/[a-z0-9.-]+",
        r"s3\.[a-z0-9-]+\.wasabisys\.com"
     ]
 
