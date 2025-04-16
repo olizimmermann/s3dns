@@ -1,14 +1,15 @@
 import socket
 import logging
-from typing import Annotated
-# from rich import print as rprint
 import threading
 import time
 import sys
 import re
 import os
+import requests
+import ipaddress
 import dns.resolver
 from helpers import color
+
 
 
 # developed by github.com/olizimmermann
@@ -23,7 +24,7 @@ from helpers import color
 
 # configuration possible below
 
-version = "0.0.4"
+version = "0.0.5"
 logo = r"""
    _____ ____    _____  _   _  _____   _____       _            _             
   / ____|___ \  |  __ \| \ | |/ ____| |  __ \     | |          | |            
@@ -48,8 +49,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class S3DNS:
-   
-    s3_regex_patterns = [
+    
+    # Add regex patterns if needed
+    regex_patterns = [
        # AWS S3 - Virtual-hosted–style (global)
        r"[a-z0-9.-]+\.s3\.amazonaws\.com",
        r"[a-z0-9.-]+\.s3-[a-z0-9-]+\.amazonaws\.com",
@@ -83,7 +85,7 @@ class S3DNS:
        r"s3\.[a-z0-9-]+\.wasabisys\.com"
     ]
 
-   # in case you need to add some hardcoded patterns
+   # In case you need to add some hardcoded patterns
     patterns = [
         "s3-us-west-1.amazonaws.com",
         "s3-us-west-2.amazonaws.com",
@@ -102,13 +104,15 @@ class S3DNS:
         "s3-sa-east-1.amazonaws.com",
         "s3.amazonaws.com",]
 
+    # Add IP ranges to check against, automatically filled with AWS IP ranges
+    ip_ranges = []
 
     def __init__(self, debug=False, bucket_file='buckets.txt'):
         self.debug = debug
         self.real_dns = None
         self.bucket_file = bucket_file
+        self.ip_ranges.extend(self.read_aws_ip_ranges())
         
-
     def dns_response(self, data, addr):
         """Extracting requested domain out of dns packet
 
@@ -120,59 +124,30 @@ class S3DNS:
             bytes: dns answer packet
         """
         ip = addr[0]
-        # Extract the domain from the DNS packet
-        # The DNS packet format is as follows:
-        # 0-1: Transaction ID
-        # 2-3: Flags
-        # 4-5: Questions
-        # 6-7: Answer RRs
-        # 8-9: Authority RRs
-        # 10-11: Additional RRs
-        # 12+: Questions (QNAME, QTYPE, QCLASS)
-        #
-        # state = 0
-        # expected_length = 0
-        # domain_str = ''
-        # domain_parts = []
-        # x = 0
-        # y = 0
-        # for byte in data[12:]:
-        #     if state == 1:
-        #         if byte != 0:
-        #             domain_str += chr(byte)
-        #         x += 1
-        #         if x == expected_length:
-        #             domain_parts.append(domain_str)
-        #             domain_str = ''
-        #             state = 0
-        #             x = 0
-        #         if byte == 0:
-        #             domain_parts.append(domain_str)
-        #             break
-
-        #     else:
-        #         state = 1
-        #         expected_length = byte
-        #     y += 1 # QNAME and QTYPE
-
+        
         # use dns.message to extract domain
         try:
             dns_message = dns.message.from_wire(data)
             question = dns_message.question[0]
             domain = question.name.to_text()
-            domain_parts = domain.split('.')
         except Exception as e:
             print(f"Error extracting domain: {e}")
             return data
         
 
-        domain_merge = ".".join(domain_parts[:-1])
-        domain_merge_ip = color.bcolors.color_text(domain_merge, color.bcolors.OKBLUE) + " requested by " + color.bcolors.color_text(ip, color.bcolors.OKGREEN)
-        domain_merge_ip_logger = domain_merge + " requested by " + ip
+        domain = domain[:-1]
+        domain_ip = color.bcolors.color_text(domain, color.bcolors.OKBLUE) + " requested by " + color.bcolors.color_text(ip, color.bcolors.OKGREEN)
+        domain_ip_logger = domain + " requested by " + ip
+
         if self.debug:
-            # logger.info(domain_merge_ip_logger)
-            print(domain_merge_ip)
-        _ = self.s3dns_detector(domain_merge)
+            # logger.info(domain_ip_logger)
+            print(domain_ip)
+            sys.stdout.flush()
+
+        t = threading.Thread(target=self.s3dns_detector, args=(domain, ip, domain))
+        t.daemon = True
+        t.start()
+        # _ = self.s3dns_detector(domain=domain, ip=ip, org_domain=domain)
 
         dns_forward = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         dns_forward.connect((self.real_dns, 53))
@@ -216,46 +191,88 @@ class S3DNS:
                     if domain in line:
                         if self.debug:
                             print(f"{color.bcolors.OKGREEN}Domain {domain} already exists in bucket file{color.bcolors.ENDC}")
+                            sys.stdout.flush()
                         return
             # add domain to file
             with open(self.bucket_file, 'a') as f:
                 f.write(f"{domain}\n")
                 if self.debug:
                     print(f"{color.bcolors.OKGREEN}Domain {domain} added to bucket file{color.bcolors.ENDC}")
+                    sys.stdout.flush()
             return
 
-    def s3dns_detector(self, domain):
+    def s3dns_detector(self, domain, ip=None, org_domain=None):
         """Detecting S3DNS
 
         Args:
             domain (str): domain to check
         """
         try:
-            # Check if the domain is a valid S3 bucket URL
+            # Check if the domain matches any of the regex patterns
             regex_match = False
-            for pattern in self.s3_regex_patterns:
-                # print(f"Checking pattern: {pattern} against domain: {domain}")
+            for pattern in self.regex_patterns:
                 if re.match(pattern, domain):
-                    # print(f"{color.bcolors.OKGREEN}S3 Bucket detected: {domain}{color.bcolors.ENDC}")
                     regex_match = True
                     break
+            
+            # Check if the domain matches any of the hardcoded patterns
+            hardcoded_match = False
+            if not regex_match:
+                for pattern in self.patterns:
+                    if pattern in domain:
+                        hardcoded_match = True
+                        break
+            
+            # Check if the domain is in the ip ranges
+            ip_match = False
+            ip_resolved = True
+            if not regex_match and not hardcoded_match:
+                if self.ip_ranges and len(self.ip_ranges) > 0:
+                    try:
+                        domain_ips = dns.resolver.resolve(domain, 'A')
+                    except Exception as e:
+                        if self.debug:
+                            print(f"{color.bcolors.FAIL}Error resolving {domain}: {e}{color.bcolors.ENDC}")
+                            sys.stdout.flush()
+                        ip_resolved = False
 
-            if ('s3-' in domain and domain.endswith('.amazonaws.com')) or regex_match or any(pattern in domain for pattern in self.patterns):
-                print(f"{color.bcolors.FAIL}Bucket detected: {domain}{color.bcolors.ENDC}")
+                    if ip_resolved:
+                        for ip_range in self.ip_ranges:
+                            for domain_ip in domain_ips:
+                                if self.is_ip_in_range_subnet(domain_ip, ip_range):
+                                    ip_match = True
+                                    if self.debug:
+                                        print(f"{color.bcolors.OKGREEN}IP range detected: {ip_range}{color.bcolors.ENDC}")
+                                        sys.stdout.flush()
+                                    break
+
+
+            if regex_match or hardcoded_match or ip_match or ('s3' in domain and domain.endswith('.amazonaws.com')):
+
+                if ip_match:
+                    ip_range_msg = f" (IP range)"
+                else:
+                    ip_range_msg = ""
+
+                if org_domain == domain:
+                    print(f"[{ip}] {color.bcolors.FAIL}Bucket detected: {domain}{color.bcolors.ENDC}" + f"{color.bcolors.OKBLUE}{ip_range_msg}{color.bcolors.ENDC}")
+                else:
+                    print(f"[{ip}] {color.bcolors.FAIL}Bucket detected: {domain}{color.bcolors.ENDC} {color.bcolors.WARNING}(Request: {org_domain}){color.bcolors.ENDC}" + f"{color.bcolors.OKBLUE}{ip_range_msg}{color.bcolors.ENDC}")
                 sys.stdout.flush()
-                logger.info(f"Bucket detected: {domain}")
+                logger.info(f"[{ip}] Bucket detected: {domain} (Request: {org_domain})" + ip_range_msg)
                 self.add_to_bucket_file(domain)
                 return True
             else:
-                ret = self.detect_cname(domain)
+                ret = self.detect_cname(domain=domain)
                 cnames = []
                 if ret:
                     cnames = ret
                 for cname in cnames:
-                    self.s3dns_detector(cname)
+                    self.s3dns_detector(domain=cname, ip=ip, org_domain=org_domain)
                 return False
         except Exception as e:
             print(f"Error: {e}")
+            sys.stdout.flush()
             return False
     
     def detect_cname(self, domain):
@@ -273,6 +290,7 @@ class S3DNS:
             if cnames:
                 if self.debug:
                     print(f"{color.bcolors.WARNING}CNAME records detected: {', '.join(cnames)}{color.bcolors.ENDC}")
+                    sys.stdout.flush()
                     # logger.info(f"CNAME records detected: {', '.join(cnames)}")
                 return cnames
             else:
@@ -282,21 +300,63 @@ class S3DNS:
         except dns.resolver.NXDOMAIN:
             if self.debug:
                 print(f"{color.bcolors.FAIL}Domain {domain} does not exist{color.bcolors.ENDC}")
+                sys.stdout.flush()
                 # logger.info(f"Domain {domain} does not exist")
             return False
         except dns.resolver.Timeout:
             if self.debug:
                 print(f"{color.bcolors.FAIL}DNS query timed out for {domain}{color.bcolors.ENDC}")
+                sys.stdout.flush()
                 # logger.info(f"DNS query timed out for {domain}")
             return False
         except Exception as e:
             if self.debug:
                 print(f"{color.bcolors.FAIL}Error resolving {domain}: {e}{color.bcolors.ENDC}")
+                sys.stdout.flush()
                 # logger.info(f"Error resolving {domain}: {e}")
             return False
-
         
+    def is_ip_in_range_subnet(self, ip, subnet):
+        """Check if an IP address is in a given subnet
 
+        Args:
+            ip (str): IP address to check
+            subnet (str): Subnet in CIDR notation
+
+        Returns:
+            bool: True if the IP address is in the subnet, False otherwise
+        """
+        try:
+            ip = ipaddress.ip_address(ip)
+            network = ipaddress.ip_network(subnet, strict=False) # strict=False allows for non-canonical CIDR notation
+            return ip in network
+        except ValueError as e:
+            print(f"Error checking IP range: {e}")
+            sys.stdout.flush()
+            return False
+    
+    def read_aws_ip_ranges(self, url="https://ip-ranges.amazonaws.com/ip-ranges.json"):
+        """Read AWS IP ranges from the given URL
+
+        Args:
+            url (str): URL to read the IP ranges from
+        """
+        try:
+            response = requests.get(url)
+            data = response.json()
+            ip_ranges = []
+            for prefix in data['prefixes']:
+                if prefix['service'] == 'S3':
+                    ip_ranges.append(prefix['ip_prefix'])
+            if self.debug:
+                print(f"{color.bcolors.OKGREEN}AWS IP ranges read successfully{color.bcolors.ENDC}")
+                sys.stdout.flush()
+                # logger.info(f"AWS IP ranges read successfully")
+            return ip_ranges
+        except Exception as e:
+            print(f"Error reading AWS IP ranges: {e}")
+            sys.stdout.flush()
+            return []
 
 
 if __name__ == "__main__":

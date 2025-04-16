@@ -6,6 +6,14 @@ It’s a handy companion for **pentesters**, **bug bounty hunters**, and **cloud
 
 ---
 
+### 🆕 Update 2025/04/16
+
+- Updated Regex Patterns
+- Updated Output for better visibility (Displaying the original domain in case of CNAMES, the ip of the client, IP range indicator)
+- Auto downloading of IP ranges from AWS - checking those too now!
+- Giving you the option to add own IP ranges (First lines of the class, manually adjust the patterns or ip ranges)
+
+
 ### 🆕 Update 2025/04/14
 
 - Added regex support for **Google Cloud Storage** and **Azure Blob Storage** buckets
