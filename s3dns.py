@@ -8,7 +8,9 @@ import os
 import requests
 import ipaddress
 import dns.resolver
+import dns.rcode
 from helpers import color
+from concurrent.futures import ThreadPoolExecutor
 
 
 
@@ -24,7 +26,7 @@ from helpers import color
 
 # configuration possible below
 
-version = "0.0.5"
+version = "0.0.6"
 logo = r"""
    _____ ____    _____  _   _  _____   _____       _            _             
   / ____|___ \  |  __ \| \ | |/ ____| |  __ \     | |          | |            
@@ -110,15 +112,18 @@ class S3DNS:
     def __init__(self, debug=False, bucket_file='buckets.txt'):
         self.debug = debug
         self.real_dns = None
+        self.resolver = dns.resolver.Resolver()
+        self.resolver.timeout = 2
         self.bucket_file = bucket_file
         self.ip_ranges.extend(self.read_aws_ip_ranges())
+        self.executor = ThreadPoolExecutor(max_workers=20)
         
     def dns_response(self, data, addr):
         """Extracting requested domain out of dns packet
 
         Args:
             data (bytes): DNS packet
-            addr (tupel(ip,port)): address information
+            addr (tuple(ip,port)): address information
 
         Returns:
             bytes: dns answer packet
@@ -132,7 +137,10 @@ class S3DNS:
             domain = question.name.to_text()
         except Exception as e:
             print(f"Error extracting domain: {e}")
-            return data
+            sys.stdout.flush()
+            fail_response = dns.message.make_response(dns_message)
+            fail_response.set_rcode(dns.rcode.SERVFAIL)
+            return fail_response.to_wire()
         
 
         domain = domain[:-1]
@@ -144,15 +152,31 @@ class S3DNS:
             print(domain_ip)
             sys.stdout.flush()
 
-        t = threading.Thread(target=self.s3dns_detector, args=(domain, ip, domain))
-        t.daemon = True
-        t.start()
+        # t = threading.Thread(target=self.s3dns_detector, args=(domain, ip, domain))
+        # t.daemon = True
+        # t.start()
         # _ = self.s3dns_detector(domain=domain, ip=ip, org_domain=domain)
 
-        dns_forward = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        dns_forward.connect((self.real_dns, 53))
-        dns_forward.send(data)
-        return dns_forward.recv(512)
+        self.executor.submit(self.s3dns_detector, domain=domain, ip=ip, org_domain=domain)
+
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as dns_forward:
+                dns_forward.settimeout(2)
+                dns_forward.connect((self.real_dns, 53))
+                dns_forward.send(data)
+                return dns_forward.recv(512)
+        except socket.timeout:
+            if self.debug:
+                print(f"{color.bcolors.FAIL}Timeout: No response from DNS server{color.bcolors.ENDC}")
+                sys.stdout.flush()
+
+        except Exception as e:
+            if self.debug:
+                print(f"{color.bcolors.FAIL}Error: {e}{color.bcolors.ENDC}")
+                sys.stdout.flush()
+        fail_response = dns.message.make_response(dns_message)
+        fail_response.set_rcode(dns.rcode.SERVFAIL)
+        return fail_response.to_wire()
 
     def handler(self,data,addr,sock):
         """Handling DNS traffic
@@ -284,7 +308,7 @@ class S3DNS:
         cnames = []
         try:
             # Use dns.resolver to get CNAME records
-            answers = dns.resolver.resolve(domain, 'CNAME')
+            answers = self.resolver.resolve(domain, 'CNAME')
             for rdata in answers:
                 cnames.append(rdata.to_text())
             if cnames:
@@ -342,7 +366,12 @@ class S3DNS:
             url (str): URL to read the IP ranges from
         """
         try:
-            response = requests.get(url)
+            # use real dns for resolving
+            ip = self.resolver.resolve(url, 'A')
+            ip = ip[0].to_text()
+            ip_url = f"https://{ip}/ip-ranges.json"
+            headers = "Host: ip-ranges.amazonaws.com"
+            response = requests.get(ip_url, timeout=5, headers=headers)
             data = response.json()
             ip_ranges = []
             for prefix in data['prefixes']:
@@ -372,7 +401,10 @@ if __name__ == "__main__":
         debug = True
     else:
         debug = False
+
     s3dns = S3DNS(debug=debug)
+
+    request_executor = ThreadPoolExecutor(max_workers=50)
 
     # Print the logo
     print(logo)
@@ -400,6 +432,7 @@ if __name__ == "__main__":
 
     if not dns_server:
         dns_server = '1.1.1.1'
+    
 
     # bucket file
     if not docker:
@@ -419,6 +452,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     s3dns.real_dns = dns_server
+    s3dns.resolver.nameservers = [dns_server]
 
     # Print the DNS server address
     print(f"Using DNS server: {color.bcolors.color_text(s3dns.real_dns, color.bcolors.OKGREEN)}")
@@ -429,6 +463,7 @@ if __name__ == "__main__":
         try:
             # Create a UDP socket
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # Allow address reuse
             sock.bind((local_dns_server_ip, 53))
             print(f"Listening on {color.bcolors.color_text(local_dns_server_ip, color.bcolors.OKGREEN)}:53")
             break
@@ -443,14 +478,10 @@ if __name__ == "__main__":
         try:
             # Receive data from the socket
             data, addr = sock.recvfrom(512)
-            
             # Handle the DNS request in a separate thread
-            t = threading.Thread(target=s3dns.handler, args=(data, addr, sock))
-            t.daemon = True
-            t.start()
+            request_executor.submit(s3dns.handler, data, addr, sock)
             sys.stdout.flush()
-
-
+    
         except KeyboardInterrupt:
             print("\nExiting...")
             sock.close()
