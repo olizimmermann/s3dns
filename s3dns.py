@@ -367,11 +367,21 @@ class S3DNS:
         """
         try:
             # use real dns for resolving
-            ip = self.resolver.resolve(url, 'A')
+            domain = url.split('/')[2]
+            ip = self.resolver.resolve(domain, 'A')
+            
             ip = ip[0].to_text()
-            ip_url = f"https://{ip}/ip-ranges.json"
-            headers = "Host: ip-ranges.amazonaws.com"
-            response = requests.get(ip_url, timeout=5, headers=headers)
+            ip_url = f"http://{ip}/ip-ranges.json"
+            headers = {"Host": domain}
+            try:
+                # disable SSL warning
+                requests.packages.urllib3.disable_warnings() # since we are using verify=False caused by the ip address
+                response = requests.get(ip_url, timeout=5, headers=headers, verify=False)
+            except Exception as e:
+                print(f"Not using AWS IP ranges")
+                sys.stdout.flush()
+                return []
+            
             data = response.json()
             ip_ranges = []
             for prefix in data['prefixes']:
