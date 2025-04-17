@@ -95,6 +95,16 @@ docker run --rm -p 53:53/udp \
   s3dns
 ```
 
+When you want to use S3DNS (in Docker) on the same machine where you perform your analysis, it can help setting the `--network host` flag. 
+
+```bash
+docker run --rm -p 53:53/udp \
+  -v "./bucket_findings/:/app/buckets/" \
+  --network host \
+  --name "s3dns" \
+  s3dns
+```
+
 📁 You'll find all findings:
 - In your **terminal**
 - Or in `./bucket_findings/`
@@ -119,6 +129,37 @@ Use it passively while analyzing a site to **spot exposed buckets without active
 ## ⚙️ Configuration
 
 You can tweak the behavior by setting environment variables or modifying `s3dns.py` directly.
+
+### Debug
+
+Enabling debug mode with **Python**:
+
+```bash
+su
+export DEBUG=TRUE
+python s3dns.py
+```
+
+**Docker**:
+
+```bash
+docker run --rm -p 53:53/udp \
+  -v "./bucket_findings/:/app/buckets/" \
+  -e "DEBUG=TRUE" \
+  --name "s3dns" \
+  s3dns
+```
+
+Setting other environment vars in **Docker**:
+
+```bash
+docker run --rm -p 53:53/udp \
+  -v "./bucket_findings/:/app/buckets/" \
+  -e "LOCAL_DNS_SERVER_IP=0.0.0.0" \
+  -e "REAL_DNS_SERVER_IP=1.1.1.1" \
+  --name "s3dns" \
+  s3dns
+```
 
 ---
 
