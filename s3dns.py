@@ -26,7 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 # configuration possible below
 
-version = "0.0.6"
+version = "0.0.7"
 logo = r"""
    _____ ____    _____  _   _  _____   _____       _            _             
   / ____|___ \  |  __ \| \ | |/ ____| |  __ \     | |          | |            
@@ -71,7 +71,15 @@ class S3DNS:
        r"s3\.amazonaws\.com\.cn",
        r"s3-[a-z0-9-]+\.amazonaws\.com\.cn",
        r"s3\.[a-z0-9-]+\.amazonaws\.com\.cn",
-   
+
+       # AWS S3 - GovCloud
+       r"[a-z0-9.-]+\.s3\.us-gov-west-1\.amazonaws\.com",
+       r"[a-z0-9.-]+\.s3\.us-gov-east-1\.amazonaws\.com",
+       r"s3\.us-gov-west-1\.amazonaws\.com",
+       r"s3\.us-gov-east-1\.amazonaws\.com",
+       r"s3-us-gov-west-1\.amazonaws\.com",
+       r"s3-us-gov-east-1\.amazonaws\.com",
+       
        # Google Cloud Storage - Virtual-hosted & path-style
        r"[a-z0-9._-]+\.storage\.googleapis\.com",
        r"storage\.googleapis\.com",

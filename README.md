@@ -5,6 +5,9 @@
 It’s a handy companion for **pentesters**, **bug bounty hunters**, and **cloud security analysts** who want to catch exposed cloud buckets during DNS traffic analysis.
 
 ---
+### 🆕 Update 2025/06/21
+
+- Added AWS Gov Cloud
 
 ### 🆕 Update 2025/04/16
 
