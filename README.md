@@ -5,6 +5,14 @@
 It’s a handy companion for **pentesters**, **bug bounty hunters**, and **cloud security analysts** who want to catch exposed cloud buckets during DNS traffic analysis.
 
 ---
+### 🆕 Update 2025/08/20
+- Added offline AWS IP ranges as a JSON file.
+- Added offline Azure Storage IP ranges as a JSON file.
+- Added the option to disable the IP range check for either service using:
+  - AZURE_IP_RANGES=false or AWS_IP_RANGES=false (default is true).
+- Moved regex_patterns and hardcoded patterns to the patterns folder as YAML files. You can add your own patterns. 
+  - Regex patterns must start with regex_.
+
 ### 🆕 Update 2025/06/21
 
 - Added AWS Gov Cloud
@@ -45,6 +53,7 @@ S3DNS listens on **UDP port 53** for DNS queries. For every DNS request it:
 3. **Returns the valid DNS response to the client**
 4. In parallel, it:
    - **Checks for AWS/GCP/Azure bucket patterns**
+   - **Checks against known IP ranges** for AWS S3 and Azure Blob Storage
    - **Follows CNAME chains recursively**
    - **Logs bucket-like domains and findings**
 
@@ -88,14 +97,21 @@ Port 53 requires elevated privileges:
 sudo python s3dns.py
 ```
 
-### Run with Docker
+### Build and Run with Docker
 
 ```bash
-docker build -t s3dns .
+docker build -t ozimmermann/s3dns:latest .
 docker run --rm -p 53:53/udp \
   -v "./bucket_findings/:/app/buckets/" \
   --name "s3dns" \
-  s3dns
+  ozimmermann/s3dns:latest
+```
+
+### ⚡️ Use Dockerhub (https://hub.docker.com/r/ozimmermann/s3dns)
+*This is the easiest way to get started with S3DNS.*
+
+```bash
+docker pull ozimmermann/s3dns:latest
 ```
 
 When you want to use S3DNS (in Docker) on the same machine where you perform your analysis, it can help setting the `--network host` flag. 
@@ -105,7 +121,7 @@ docker run --rm -p 53:53/udp \
   -v "./bucket_findings/:/app/buckets/" \
   --network host \
   --name "s3dns" \
-  s3dns
+  ozimmermann/s3dns:latest
 ```
 Since port 53 requires that elevated privileges, some users (Mac users for example) need `sudo` here as well.
 
@@ -114,7 +130,7 @@ sudo docker run --rm -p 53:53/udp \
   -v "./bucket_findings/:/app/buckets/" \
   --network host \
   --name "s3dns" \
-  s3dns
+  ozimmermann/s3dns:latest
 ```
 
 📁 You'll find all findings:
@@ -142,6 +158,18 @@ Use it passively while analyzing a site to **spot exposed buckets without active
 
 You can tweak the behavior by setting environment variables or modifying `s3dns.py` directly.
 
+### Possible Environment Variables
+
+- `DEBUG`: Enable debug mode (default: `false`)
+- `AWS_IP_RANGES`: Enable AWS IP range checks (default: `true`)
+- `AZURE_IP_RANGES`: Enable Azure IP range checks (default: `true`)
+- `REAL_DNS_SERVER_IP`: Set the real DNS server IP (default: `1.1.1.1`)
+- `LOCAL_DNS_SERVER_IP`: Set the local DNS server IP / the listening interface (default: `0.0.0.0`)
+- `BUCKET_FILE`: Set the bucket file path (default: `buckets.txt`)
+
+#### ⚠️ Information about AZURE IP Ranges
+Since Microsoft does not explicitly name their Azure Blob Storage IP ranges, S3DNS uses all publicly provided Azure Storage IP addresses. This may lead to false positives. Consider disabling this check if you encounter issues by setting AZURE_IP_RANGES=false.
+
 ### Debug
 
 Enabling debug mode with **Python**:
@@ -159,7 +187,7 @@ docker run --rm -p 53:53/udp \
   -v "./bucket_findings/:/app/buckets/" \
   -e "DEBUG=TRUE" \
   --name "s3dns" \
-  s3dns
+  ozimmermann/s3dns:latest
 ```
 
 Setting other environment vars in **Docker**:
@@ -170,7 +198,7 @@ docker run --rm -p 53:53/udp \
   -e "LOCAL_DNS_SERVER_IP=0.0.0.0" \
   -e "REAL_DNS_SERVER_IP=1.1.1.1" \
   --name "s3dns" \
-  s3dns
+  ozimmermann/s3dns:latest
 ```
 
 ---
