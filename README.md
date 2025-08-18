@@ -107,6 +107,15 @@ docker run --rm -p 53:53/udp \
   --name "s3dns" \
   s3dns
 ```
+Since port 53 requires that elevated privileges, some users (Mac users for example) need `sudo` here as well.
+
+```bash
+sudo docker run --rm -p 53:53/udp \
+  -v "./bucket_findings/:/app/buckets/" \
+  --network host \
+  --name "s3dns" \
+  s3dns
+```
 
 📁 You'll find all findings:
 - In your **terminal**
