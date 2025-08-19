@@ -238,7 +238,7 @@ docker run --rm -p 53:53/udp \
 
 ## 🖼️ Sample Output
 
-![Sample Output Docker](https://github.com/olizimmermann/s3dns/blob/main/images/output.png)
+![Sample Output Docker](https://github.com/olizimmermann/s3dns/blob/main/images/output.jpg)
 
 ---
 
