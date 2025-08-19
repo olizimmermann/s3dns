@@ -114,6 +114,8 @@ sudo python s3dns.py
 
 ```bash
 docker build -t ozimmermann/s3dns:latest .
+```
+```bash
 docker run --rm -p 53:53/udp \
   -v "./bucket_findings/:/app/buckets/" \
   --name "s3dns" \
