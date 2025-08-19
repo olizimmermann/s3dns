@@ -1,0 +1,62 @@
+# patterns.yml
+# Regex patterns for S3DNS detection
+# Categories: AWS, Google Cloud, Azure, DigitalOcean, Wasabi
+
+aws_virtual_global:
+  - "[a-z0-9.-]+\\.s3(\\.|-)[a-z0-9-]+\\.amazonaws\\.com"
+  - "[a-z0-9.-]+\\.s3\\.amazonaws\\.com"
+
+aws_virtual_china:
+  - "[a-z0-9.-]+\\.s3(\\.|-)[a-z0-9-]+\\.amazonaws\\.com\\.cn"
+  - "[a-z0-9.-]+\\.s3\\.amazonaws\\.com\\.cn"
+
+aws_path_style:
+  - "s3(\\.|-)[a-z0-9-]+\\.amazonaws\\.com"
+  - "s3\\.amazonaws\\.com"
+  - "s3(\\.|-)[a-z0-9-]+\\.amazonaws\\.com\\.cn"
+  - "s3\\.amazonaws\\.com\\.cn"
+
+aws_govcloud:
+  - "([a-z0-9.-]+\\.)?s3(\\.|-)(us-gov-(west|east)-1)\\.amazonaws\\.com"
+
+google_cloud_storage:
+  - "[a-z0-9._-]+\\.storage\\.googleapis\\.com"
+  - "storage\\.googleapis\\.com"
+
+azure_blob_storage:
+  - "[a-z0-9-]+\\.blob\\.core\\.windows\\.net"
+
+digitalocean_spaces:
+  - "[a-z0-9.-]+\\.[a-z0-9-]+\\.digitaloceanspaces\\.com"
+
+wasabi:
+  - "([a-z0-9.-]+\\.)?s3\\.[a-z0-9-]+\\.wasabisys\\.com"
+
+ibm_cos:
+  - "[a-z0-9.-]+\\.s3\\.[a-z0-9-]+\\.cloud-object-storage\\.appdomain\\.cloud"
+
+oracle_object_storage:
+  - "[a-z0-9-]+\\.compat\\.objectstorage\\.[a-z0-9-]+\\.oraclecloud\\.com"
+  - "[a-z0-9-]+\\.objectstorage\\.[a-z0-9-]+\\.oraclecloud\\.com"
+
+alibaba_oss:
+  - "[a-z0-9.-]+\\.oss-[a-z0-9-]+\\.aliyuncs\\.com"
+  - "[a-z0-9.-]+\\.oss\\.[a-z0-9-]+\\.aliyuncs\\.com"
+
+backblaze_b2:
+  - "[a-z0-9.-]+\\.s3\\.[a-z0-9-]+\\.backblazeb2\\.com"
+  - "[a-z0-9.-]+\\.backblazeb2\\.com"
+
+linode_object_storage:
+  - "[a-z0-9.-]+\\.linodeobjects\\.com"
+
+scaleway_object_storage:
+  - "[a-z0-9.-]+\\.s3\\.[a-z0-9-]+\\.scw\\.cloud"
+
+vultr_object_storage:
+  - "[a-z0-9.-]+\\.vultrobjects\\.com"
+
+cloudflare_r2:
+  - "[a-z0-9.-]+\\.r2\\.cloudflarestorage\\.com"
+
+
