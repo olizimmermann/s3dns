@@ -28,7 +28,7 @@ import yaml
 
 # configuration possible below
 
-version = "0.1.0"
+version = "0.1.1"
 logo = r"""
    _____ ____    _____  _   _  _____   _____       _            _             
   / ____|___ \  |  __ \| \ | |/ ____| |  __ \     | |          | |            

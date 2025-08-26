@@ -76,12 +76,15 @@ In parallel, it:
 
 ## 🧱 Prerequisites
 
+You will only need one of the following:
 * Python **3.11+**
 * Docker (optional, but recommended)
 
 ---
 
 ## 🔧 Installation
+
+*Only needed if you want to run it locally with Python*
 
 ### Clone the Repository
 
@@ -95,6 +98,8 @@ cd s3dns
 (Using a virtual environment is recommended)
 
 ```bash
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -110,6 +115,8 @@ Port 53 requires elevated privileges:
 sudo python s3dns.py
 ```
 
+*If the command with `sudo` claims missing a module, try using: `sudo venv/bin/python s3dns.py`*
+
 
 * If you build the image yourself, be sure to tag it the same as the Docker Hub version for consistency: `docker build -t ozimmermann/s3dns:latest .`
 
@@ -120,22 +127,7 @@ sudo python s3dns.py
 
 ```bash
 docker pull ozimmermann/s3dns:latest
-```
-
-When using S3DNS on the same machine where you perform analysis, it may help to set the `--network host` flag:
-
-```bash
 docker run --rm -p 53:53/udp \
-  -v "./bucket_findings/:/app/buckets/" \
-  --network host \
-  --name "s3dns" \
-  ozimmermann/s3dns:latest
-```
-
-Since port 53 requires elevated privileges, some users (e.g., Mac users) may need `sudo`:
-
-```bash
-sudo docker run --rm -p 53:53/udp \
   -v "./bucket_findings/:/app/buckets/" \
   --name "s3dns" \
   ozimmermann/s3dns:latest
@@ -158,6 +150,25 @@ docker run --rm -p 53:53/udp \
 * In the **terminal**, and/or
 * In `./bucket_findings/`
 
+### Troubleshooting 
+When using S3DNS on the same machine where you perform analysis, it may help to set the `--network host` flag:
+
+```bash
+docker run --rm -p 53:53/udp \
+  -v "./bucket_findings/:/app/buckets/" \
+  --network host \
+  --name "s3dns" \
+  ozimmermann/s3dns:latest
+```
+
+Since port 53 requires elevated privileges, some users (e.g., Mac users) may need `sudo`:
+
+```bash
+sudo docker run --rm -p 53:53/udp \
+  -v "./bucket_findings/:/app/buckets/" \
+  --name "s3dns" \
+  ozimmermann/s3dns:latest
+```
 
 ---
 
