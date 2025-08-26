@@ -110,22 +110,11 @@ Port 53 requires elevated privileges:
 sudo python s3dns.py
 ```
 
-### Build and Run with Docker
-
-```bash
-docker build -t ozimmermann/s3dns:latest .
-```
-```bash
-docker run --rm -p 53:53/udp \
-  -v "./bucket_findings/:/app/buckets/" \
-  --name "s3dns" \
-  ozimmermann/s3dns:latest
-```
 
 * If you build the image yourself, be sure to tag it the same as the Docker Hub version for consistency: `docker build -t ozimmermann/s3dns:latest .`
 
 
-### Use Dockerhub
+### Use Docker
 
 *The easiest way to get started with S3DNS.*
 
@@ -148,7 +137,18 @@ Since port 53 requires elevated privileges, some users (e.g., Mac users) may nee
 ```bash
 sudo docker run --rm -p 53:53/udp \
   -v "./bucket_findings/:/app/buckets/" \
-  --network host \
+  --name "s3dns" \
+  ozimmermann/s3dns:latest
+```
+
+### Build and Run with Docker
+
+```bash
+docker build -t ozimmermann/s3dns:latest .
+```
+```bash
+docker run --rm -p 53:53/udp \
+  -v "./bucket_findings/:/app/buckets/" \
   --name "s3dns" \
   ozimmermann/s3dns:latest
 ```
@@ -157,6 +157,7 @@ sudo docker run --rm -p 53:53/udp \
 
 * In the **terminal**, and/or
 * In `./bucket_findings/`
+
 
 ---
 
