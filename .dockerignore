@@ -1,0 +1,12 @@
+.git
+.github
+*.md
+images/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+buckets.txt
+bucket_findings/
+.gitignore

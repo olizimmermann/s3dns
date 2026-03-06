@@ -1,0 +1,71 @@
+name: Update AWS IP Ranges
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday at 06:00 UTC
+  workflow_dispatch:      # Allow manual trigger for testing
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # needed to push commits and create releases
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download latest AWS IP ranges
+        run: curl -sSf https://ip-ranges.amazonaws.com/ip-ranges.json -o /tmp/aws_new.json
+
+      - name: Check for changes
+        id: compare
+        run: |
+          if diff -q ip_ranges/aws.json /tmp/aws_new.json > /dev/null 2>&1; then
+            echo "AWS IP ranges unchanged, nothing to do."
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "AWS IP ranges have changed."
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Replace aws.json
+        if: steps.compare.outputs.changed == 'true'
+        run: cp /tmp/aws_new.json ip_ranges/aws.json
+
+      - name: Bump patch version in s3dns.py
+        if: steps.compare.outputs.changed == 'true'
+        id: version
+        run: |
+          current=$(grep '^version = ' s3dns.py | sed 's/version = "\(.*\)"/\1/')
+          major=$(echo "$current" | cut -d. -f1)
+          minor=$(echo "$current" | cut -d. -f2)
+          patch=$(echo "$current" | cut -d. -f3)
+          new_patch=$((patch + 1))
+          new_version="${major}.${minor}.${new_patch}"
+          sed -i "s/version = \"${current}\"/version = \"${new_version}\"/" s3dns.py
+          echo "old_version=$current" >> $GITHUB_OUTPUT
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+
+      - name: Commit and push
+        if: steps.compare.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ip_ranges/aws.json s3dns.py
+          git commit -m "chore: update AWS S3 IP ranges, bump version to ${{ steps.version.outputs.new_version }}"
+          git push
+
+      - name: Create GitHub release
+        if: steps.compare.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.version.outputs.new_version }}" \
+            --title "v${{ steps.version.outputs.new_version }}" \
+            --notes "**Automated update**
+
+          AWS S3 IP ranges refreshed ($(date -u +%Y-%m-%d)).
+
+          Previous version: \`${{ steps.version.outputs.old_version }}\`" \
+            --latest
