@@ -31,7 +31,7 @@ import yaml
 
 # configuration possible below
 
-version = "0.2.4"
+version = "0.2.5"
 logo = r"""
    _____ ____    _____  _   _  _____   _____       _            _
   / ____|___ \  |  __ \| \ | |/ ____| |  __ \     | |          | |
