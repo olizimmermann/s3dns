@@ -1,3 +1,4 @@
+import argparse
 import socket
 import logging
 import time
@@ -747,20 +748,75 @@ class S3DNS:
         return regex_patterns, hardcoded_patterns
 
 
+def parse_args():
+    """Parse command-line arguments.
+
+    All options are optional. When a flag is omitted its value falls back to
+    the corresponding environment variable, and finally to the interactive
+    prompt (or Docker default), so running with no arguments behaves exactly
+    as it did before this CLI existed.
+    """
+    parser = argparse.ArgumentParser(
+        prog="s3dns",
+        description="s3dns - passive cloud storage bucket detection DNS server.",
+        epilog="Precedence for every option: command-line flag > environment "
+               "variable > interactive prompt / default. With no flags, "
+               "behavior is unchanged.",
+    )
+    parser.add_argument("--version", action="version", version=f"s3dns {version}")
+    parser.add_argument("-d", "--debug", action="store_true", default=None,
+                        help="Enable verbose debug output (env: DEBUG)")
+    parser.add_argument("-l", "--listen", "--local-dns", dest="listen", metavar="IP",
+                        help="Local interface to listen on "
+                             "(env: LOCAL_DNS_SERVER_IP, default: 0.0.0.0)")
+    parser.add_argument("-u", "--upstream", "--real-dns", dest="upstream", metavar="IP",
+                        help="Upstream DNS resolver to forward queries to "
+                             "(env: REAL_DNS_SERVER_IP, default: 1.1.1.1)")
+    parser.add_argument("-b", "--bucket-file", dest="bucket_file", metavar="PATH",
+                        help="Path to write discovered bucket domains "
+                             "(env: BUCKET_FILE, default: buckets.txt)")
+    parser.add_argument("--aws-ip-ranges", action=argparse.BooleanOptionalAction,
+                        default=None,
+                        help="Enable/disable AWS S3 IP range checks "
+                             "(env: AWS_IP_RANGES, default: enabled)")
+    parser.add_argument("--azure-ip-ranges", action=argparse.BooleanOptionalAction,
+                        default=None,
+                        help="Enable/disable Azure Storage IP range checks "
+                             "(env: AZURE_IP_RANGES, default: enabled)")
+    parser.add_argument("--rate-limit", type=int, default=None, metavar="N",
+                        help="Max DNS requests/sec per client IP, 0 to disable "
+                             "(env: RATE_LIMIT, default: 100)")
+    parser.add_argument("--cache-size", type=int, default=None, metavar="N",
+                        help="Max cached DNS responses, 0 to disable "
+                             "(env: CACHE_SIZE, default: 1000)")
+    parser.add_argument("--max-cname-depth", type=int, default=None, metavar="N",
+                        help="Max CNAME chain depth to follow (default: 10)")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    debug = os.getenv("DEBUG", "false").lower() == "true"
+    args = parse_args()
     docker = os.getenv("DOCKER", "false").lower() == "true"
 
-    aws_ip_ranges_var = os.getenv("AWS_IP_RANGES", "true").lower() == "true"
-    azure_ip_ranges_var = os.getenv("AZURE_IP_RANGES", "true").lower() == "true"
-    rate_limit_var = int(os.getenv("RATE_LIMIT", "100"))
-    cache_size_var = int(os.getenv("CACHE_SIZE", "1000"))
+    # CLI flag > environment variable > built-in default
+    debug = args.debug if args.debug is not None \
+        else os.getenv("DEBUG", "false").lower() == "true"
+    aws_ip_ranges_var = args.aws_ip_ranges if args.aws_ip_ranges is not None \
+        else os.getenv("AWS_IP_RANGES", "true").lower() == "true"
+    azure_ip_ranges_var = args.azure_ip_ranges if args.azure_ip_ranges is not None \
+        else os.getenv("AZURE_IP_RANGES", "true").lower() == "true"
+    rate_limit_var = args.rate_limit if args.rate_limit is not None \
+        else int(os.getenv("RATE_LIMIT", "100"))
+    cache_size_var = args.cache_size if args.cache_size is not None \
+        else int(os.getenv("CACHE_SIZE", "1000"))
+    max_cname_depth_var = args.max_cname_depth if args.max_cname_depth is not None else 10
 
     s3dns = S3DNS(
         debug=debug,
         aws_ip_ranges=aws_ip_ranges_var,
         azure_ip_ranges=azure_ip_ranges_var,
         rate_limit=rate_limit_var,
+        max_cname_depth=max_cname_depth_var,
         cache_size=cache_size_var,
     )
 
@@ -771,7 +827,9 @@ if __name__ == "__main__":
 
     # Get the DNS server IP address
     local_dns_server_ip = '0.0.0.0'
-    if not docker:
+    if args.listen:
+        local_dns_server_ip_input = args.listen
+    elif not docker:
         local_dns_server_ip_input = input(f"Enter local DNS server address (default: {local_dns_server_ip}): ")
     else:
         local_dns_server_ip_input = os.getenv("LOCAL_DNS_SERVER_IP", '0.0.0.0')
@@ -784,7 +842,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Get the real upstream DNS server address
-    if not docker:
+    if args.upstream:
+        dns_server = args.upstream
+    elif not docker:
         dns_server = input(f"Enter real DNS server address (default: 1.1.1.1): ")
     else:
         dns_server = os.getenv('REAL_DNS_SERVER_IP', '1.1.1.1')
@@ -793,7 +853,9 @@ if __name__ == "__main__":
         dns_server = '1.1.1.1'
 
     # Bucket file
-    if not docker:
+    if args.bucket_file:
+        bucket_file = args.bucket_file
+    elif not docker:
         bucket_file = input(f"Enter bucket file path (default: buckets.txt): ")
     else:
         bucket_file = os.getenv('BUCKET_FILE', 'buckets.txt')

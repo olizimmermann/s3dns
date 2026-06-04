@@ -212,7 +212,33 @@ Use it passively while analyzing a site to **spot exposed buckets and takeover o
 
 ## ⚙️ Configuration
 
-You can tweak behavior via environment variables or by modifying `s3dns.py`.
+You can tweak behavior via command-line flags, environment variables, or by modifying `s3dns.py`.
+
+Precedence for every option is: **command-line flag > environment variable > interactive prompt / default.** Running with no flags behaves exactly as before.
+
+### Command-Line Flags
+
+Run `python s3dns.py -h` for the full list:
+
+| Flag | Equivalent env var | Description |
+|---|---|---|
+| `-h`, `--help` | – | Show help and exit |
+| `--version` | – | Show version and exit |
+| `-d`, `--debug` | `DEBUG` | Enable verbose debug output |
+| `-l`, `--listen IP` | `LOCAL_DNS_SERVER_IP` | Local interface to listen on |
+| `-u`, `--upstream IP` | `REAL_DNS_SERVER_IP` | Upstream DNS resolver to forward to |
+| `-b`, `--bucket-file PATH` | `BUCKET_FILE` | Path to write discovered bucket domains |
+| `--aws-ip-ranges` / `--no-aws-ip-ranges` | `AWS_IP_RANGES` | Toggle AWS S3 IP range checks |
+| `--azure-ip-ranges` / `--no-azure-ip-ranges` | `AZURE_IP_RANGES` | Toggle Azure Storage IP range checks |
+| `--rate-limit N` | `RATE_LIMIT` | Max DNS requests/sec per client IP (`0` = disabled) |
+| `--cache-size N` | `CACHE_SIZE` | Max cached DNS responses (`0` = disabled) |
+| `--max-cname-depth N` | – | Max CNAME chain depth to follow (default: 10) |
+
+Example:
+
+```bash
+sudo python s3dns.py -l 0.0.0.0 -u 1.1.1.1 --rate-limit 200 --no-azure-ip-ranges
+```
 
 ### Environment Variables
 
