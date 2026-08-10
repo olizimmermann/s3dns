@@ -32,7 +32,7 @@ import yaml
 
 # configuration possible below
 
-version = "0.2.24"
+version = "0.2.25"
 logo = r"""
    _____ ____    _____  _   _  _____   _____       _            _
   / ____|___ \  |  __ \| \ | |/ ____| |  __ \     | |          | |
